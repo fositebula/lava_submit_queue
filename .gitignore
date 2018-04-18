@@ -2,3 +2,5 @@
 *.pyc
 *.pid
 *.csv
+.idea/workspace.xml
+untitled2/login.info

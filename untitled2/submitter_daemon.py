@@ -13,7 +13,6 @@ import json
 import subprocess
 import random
 import smtplib
-import os
 
 PID_FILE = "submitter.pid"
 
@@ -30,7 +29,7 @@ SMPT_PORT = 587
 DOCMD = "ehlo"
 PASSWD = "123@afAF"
 
-CIRCLE = 18
+CIRCLE = 1
 
 def update_django_submit(**kwargs):
     id = kwargs.get("id")
@@ -62,8 +61,8 @@ def send_mail(mail_obj, sub, content, send_mail_list):
         msg['Subject'] = sub
         con = MIMEText(content, 'html', 'utf-8')
         msg.attach(con)
-        mail_obj.sendmail(MAIL_COUNT, send_mail_list, msg.as_string())
-        mail_obj.quit()
+        #mail_obj.sendmail(MAIL_COUNT, send_mail_list, msg.as_string())
+        #mail_obj.quit()
     except:
         traceback.print_exc()
         logger.error(traceback.format_exc())
@@ -108,26 +107,26 @@ def call_submitter(data, mail):
                     data["gerrit_id"], data["port"], data["compile_user"], data["module"], data["test_cases"],
                     data["manual_test_case"], data["phone_number"],  data["test_description"], data["project_num"],
                     data["test_task_type"]]
-        log = subprocess.Popen(cmd_parm, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out_log = log.stdout.read()
-        err_log = log.stderr.read()
 
-        log_file_name = "submitting_log/{}_{}_{}".format(get_time_stamp(), get_random_str(), data["build_id"])
-        jobid = ""
-        if out_log:
-            find_job = re.findall("jobid:\((\d*)\)", out_log, re.S)
-            if len(find_job) != 0:
-                jobid = find_job[0]
-                log_file_name = log_file_name + "_" + jobid
-        running_log = "{}.log".format(log_file_name)
-        with open(running_log, 'w') as fd:
-            fd.write("*****************>>>out log<<<*****************\n")
-            fd.write(out_log)
-            fd.write("\n")
-            fd.write("*****************>>>err log<<<*****************\n")
-            fd.write(err_log)
-            os.fsync(fd)
-        update_django_submit(id=data.get("id"), jobid=jobid, running_log=running_log)
+        out_log_file_name = "submitting_log/{}_{}_{}_out".format(get_time_stamp(), get_random_str(), data["build_id"])
+        out_fd = open(out_log_file_name, 'wrb')
+        err_log_file_name = "submitting_log/{}_{}_{}_err".format(get_time_stamp(), get_random_str(), data["build_id"])
+        err_fd = open(err_log_file_name, 'wrb')
+
+        log = subprocess.Popen(cmd_parm, stdout=out_fd, stderr=err_fd)
+        logger.info("submit_job_168_v2.py PRAM: %s"%str(data))
+        logger.info("PID: %s"%str(log.pid))
+        log.wait()
+        if log.returncode != 0:
+            update_django_submit(id=data["id"], jobid="", running_log=err_log_file_name)
+            content = "<b>submit_job_168_v2.py</b><br>"
+            content += "<p>%s</p>"%log.returncode
+            subject = "%s submit occur some error!"%data.get("build_id")
+            send_mail(mail_obj, subject, content, TO_SOMEONE)
+            update_django_submit(id=data["id"], jobid="", running_log=err_fd.name)
+        else:
+            update_django_submit(id=data["id"], jobid="", running_log=out_fd.name)
+
     except Exception as e:
         traceback.print_exc()
         content = "<b>%s</b><br>"%e.message
@@ -150,3 +149,4 @@ if __name__ == "__main__":
     print p.pid
     with open(PID_FILE, "w") as fd:
         fd.write(str(p.pid))
+    p.join()

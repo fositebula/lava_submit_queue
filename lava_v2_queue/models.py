@@ -39,6 +39,8 @@ class VerifyDataTmp(models.Model):
     project_num = models.CharField(max_length=50, default="")
     test_task_type = models.CharField(max_length=50, default="")
 
+    poped_flag = models.IntegerField(default=0)
+
     date_time = models.DateTimeField(auto_now=True)
 
     submitted_flag = models.IntegerField(default=0)
