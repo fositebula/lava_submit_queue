@@ -16,20 +16,21 @@ import smtplib
 
 PID_FILE = "submitter.pid"
 
-JOB_SOURCE_URL = "http://10.0.70.33:8000/lava_submit/poptmp/"
+JOB_SOURCE_URL = "http://10.0.70.63/lava_v2/lava_submit/poptmp/"
 UPDATE_JOB_SOURCE_URL = "http://10.0.70.33:8000/lava_submit/updatetmp/"
 LOG_FILE = "./lava_submitter.log"
 LOG_LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
-TO_SOMEONE = ["dongpl@spreadst.com"]
-MAIL_COUNT = "pl.dong@spreadtrum.com"
-SMPT_HOST = "10.0.1.200"
+TO_SOMEONE = ["pl.dong@unisoc.com"]
+MAIL_ACCOUNT = "pl.dong@spreadtrum.com"
+PASSWD = "123@afAF"
+MAIL_FROM = "pl.dong@unisoc.com"
+SMPT_HOST = "smtp.unisoc.com"
 SMPT_PORT = 587
 DOCMD = "ehlo"
-PASSWD = "123@afAF"
 
-CIRCLE = 1
+CIRCLE = 18
 
 def update_django_submit(**kwargs):
     id = kwargs.get("id")
@@ -47,22 +48,22 @@ def update_django_submit(**kwargs):
 
 
 def mail_init():
-    server = smtplib.SMTP('10.0.1.200', 587)
-    server.docmd(DOCMD, MAIL_COUNT)
+    server = smtplib.SMTP(SMPT_HOST, SMPT_PORT)
+    server.docmd(DOCMD, MAIL_ACCOUNT)
     server.starttls()
-    server.login(MAIL_COUNT, PASSWD)
+    server.login(MAIL_ACCOUNT, PASSWD)
     return server
 
 def send_mail(mail_obj, sub, content, send_mail_list):
     try:
         msg = MIMEMultipart()
-        msg['From'] = MAIL_COUNT
+        msg['From'] = MAIL_FROM
         msg['To'] = COMMASPACE.join(send_mail_list)
         msg['Subject'] = sub
         con = MIMEText(content, 'html', 'utf-8')
         msg.attach(con)
-        #mail_obj.sendmail(MAIL_COUNT, send_mail_list, msg.as_string())
-        #mail_obj.quit()
+        mail_obj.sendmail(MAIL_ACCOUNT, send_mail_list, msg.as_string())
+        mail_obj.quit()
     except:
         traceback.print_exc()
         logger.error(traceback.format_exc())
@@ -128,11 +129,8 @@ def call_submitter(data, mail):
             update_django_submit(id=data["id"], jobid="", running_log=out_fd.name)
 
     except Exception as e:
+        send_mail(mail_obj, 'Submit Daemon Exception', traceback.format_exc(), TO_SOMEONE)
         traceback.print_exc()
-        content = "<b>%s</b><br>"%e.message
-        content += "<p>%s</p>"%traceback.format_exc()
-        subject = "%s submit occur some error!"%data.get("build_id")
-        send_mail(mail_obj, subject, content, TO_SOMEONE)
 
 def main():
     logger_init()
