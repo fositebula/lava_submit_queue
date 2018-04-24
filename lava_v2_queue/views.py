@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
 import re
 import traceback
 
 from django.core.files import File
 from django.http import HttpResponse
 from django.shortcuts import render
+
+from lava_v2_queue.tables import VerifyTables
 from models import VerifyData, VerifyDataTmp
 from form import VerifyDataForm, VerifyDataTmpForm, RunningLogTmpForm
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 import json
 # Create your views here.
-
+import logging
+logger = logging.getLogger("django") # 为loggers中定义的名称
 # lava_submit/push/?buildlist=1&build_id=1&submit_user=1&verify_url=1&gerrit_id=1&port=1&
 # compile_user=1&module=1&
 # test_cases=1&manual_test_case=1&phone_number=1&test_description=1&project_num=1&test_task_type=1
@@ -95,6 +100,7 @@ def pop_tmp(request):
             v.save()
             j_str = json.dumps(vdd)
             print "poptmp", j_str
+            logger.info(j_str)
             return HttpResponse(j_str)
         except Exception as e:
             return HttpResponse(e.message)
@@ -134,6 +140,33 @@ def upload_files(request):
             verify_data.save()
             return HttpResponse("upload successfully!")
 
+def get_lava_jobs(request):
+    if request.method == 'GET':
+        jobs = []
+        jobs_q = VerifyDataTmp.objects.exclude(lavaJobId='')
+        for job in jobs_q:
+            jobs.append(job.lavaJobId)
+
+        return HttpResponse(", ".join(jobs))
+
+def get_data_infos(request):
+    if request.method == "GET":
+        table = VerifyTables(VerifyDataTmp.objects.exclude(lavaJobId=''))
+        return render(request, 'VerifyDataInfo.html', {'table':table})
+
+def get_log(request, year, month, day, file_name):
+    logger.info( "/".join([year, month, day, file_name]))
+    # return HttpResponse("/".join([year, month, day, file_name]))
+    file_path = '{media_path}/logs/{year}/{month}/{day}/{file}'.format(media_path=settings.MEDIA_URL, year=year, month=month, day=day, file=file_name)
+    file_name = file_name
+    if request.method == "GET":
+        if not os.path.exists(file_path):
+            return HttpResponse('No file: %s'%file_path)
+        with open(file_path, 'rb') as fd:
+            log_str = fd.read()
+            log_str = log_str.replace('\n', '<br \>')
+            log_str = "<h3> %s </h3>"%file_name + log_str
+            return HttpResponse(log_str)
 
 def index(request):
     return HttpResponse("Welcome!!!")

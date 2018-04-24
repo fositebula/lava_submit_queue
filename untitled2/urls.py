@@ -15,7 +15,6 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from django.contrib.auth import urls, views
 from lava import views as lava_view
 from lava_v2_queue import views as queue_view
 
@@ -36,4 +35,8 @@ urlpatterns = [
     url(r'^lava_submit/pushtmp/$', queue_view.push_tmp, name='queue_push_tmp'),
     url(r'^lava_submit/poptmp/$', queue_view.pop_tmp, name='queue_pop_tmp'),
     url(r'^lava_submit/updatetmp/$', queue_view.update_tmp, name='queue_update_tmp'),
+    url(r'^lava_submit/jobstmp/$', queue_view.get_lava_jobs, name='get_lava_jobs_tmp'),
+    url(r'^lava_submit/VerifyInfos/$', queue_view.get_data_infos, name='get_data_infos_tmp'),
+    url(r'^lava_submit/VerifyInfos/log/(20\d{2})/(\d{2})/(\d{2})/(\d{14}_[a-p]{5}_\d+_out)/$', queue_view.get_log, name='get_log_tmp'),
+    #url(r'^lava_submit/VerifyInfos/log/(\d+)/(\d+)/(\d+)/$', queue_view.get_log, name='get_log_tmp'),
 ]
