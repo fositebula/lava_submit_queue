@@ -40,6 +40,7 @@ class VerifyDataTmp(models.Model):
     test_task_type = models.CharField(max_length=50, default="")
 
     poped_flag = models.IntegerField(default=0)
+    update_flag = models.IntegerField(default=0)
 
     date_time = models.DateTimeField(auto_now=True)
 

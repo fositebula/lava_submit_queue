@@ -74,7 +74,7 @@ def push_tmp(request):
 def pop_tmp(request):
     if request.method == "GET":
         try:
-            verify_data = VerifyDataTmp.objects.filter(submitted_flag=0).filter(poped_flag=0)
+            verify_data = VerifyDataTmp.objects.filter(submitted_flag=0).filter(poped_flag=0).filter(update_flag=0)
             if  len(verify_data) == 0:
                 return HttpResponse("No data for submitting!")
             vdd = verify_data.values(
@@ -125,6 +125,7 @@ def update_tmp(request):
         if running_log:
             info.submitted_flag = 1
             info.submitting_log = running_log
+            info.update_flag = 1
             info.save()
             return HttpResponse('ok')
     return HttpResponse(dict(request.POST))
