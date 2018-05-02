@@ -1,7 +1,9 @@
-import re
+# -*- coding: utf-8 -*-
+
 import traceback
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from requests import ConnectionError
 from smtpd import COMMASPACE
 from multiprocessing import Process
 
@@ -31,6 +33,14 @@ SMPT_PORT = 587
 DOCMD = "ehlo"
 
 CIRCLE = 18
+
+#如果从lava queue上获取下来的数据已经提交过，就需要将生成的运行log反馈给lava queue
+def remove_duplicate():
+    pass
+
+#如果有resubmit标志，就要先执行这条相关的程序
+def resubmit():
+    pass
 
 def update_django_submit(**kwargs):
     id = kwargs.get("id")
@@ -83,6 +93,10 @@ def get_job():
         return job_ret
     except ValueError:
         return job_info
+    except ConnectionError:
+        send_mail('Submit Daemon Exception', traceback.format_exc(), TO_SOMEONE)
+        logger.error(traceback.format_exc())
+        time.sleep(CIRCLE)
     except Exception as e:
         send_mail('Submit Daemon Exception', traceback.format_exc(), TO_SOMEONE)
         logger.error(traceback.format_exc())
